@@ -101,12 +101,10 @@
            				<i  style="color:#660066;">syntax: Create(object) </i><br/>
            				Example:<br/>
 <pre style="color: #006600;">
-var PERSON = Create(function(){
-	this.firstName = new ProtectedProperty('');
-	this.lastName  = new ProtectedProperty('');
+var PERSON = Create(function(){	
 	this._init = function(firstName, lastName){
-		this.firstName = firstName;
-		this.lastName  = lastName;
+		this.firstName = new ProtectedProperty(firstName);
+		this.lastName  = new ProtectedProperty(lastName);
 	};
 	this.information = function(){
 		console.log('my name is ' + this.firstName + " " + this.lastName);
@@ -127,6 +125,36 @@ m.getFirstName = function(){
 }
 
 )</pre>
+<pre style="color: #660000;">( <b>Không nên sử dụng khai báo như sau: </b>
+
+var PERSON = Create(function(){
+	this.firstName = new ProtectedProperty('');
+	this.lastName  = new ProtectedProperty('');
+	this._init = function(firstName, lastName){
+		this.firstName = firstName;
+		this.lastName  = lastName;
+	};
+	this.information = function(){
+		console.log('my name is ' + this.firstName + " " + this.lastName);
+	};
+})
+
+instead use
+
+var PERSON = Create(function(){	
+	this._init = function(firstName, lastName){
+		this.firstName = new ProtectedProperty(firstName);
+		this.lastName  = new ProtectedProperty(lastName);
+	};
+	this.information = function(){
+		console.log('my name is ' + this.firstName + " " + this.lastName);
+	};
+})
+
+Bởi vì theo cớ chế sử lý function scope (firstName, lastName) được nằm ở lớp parent (__proto__) nhưng với khai báo ở dưới, nó được đặt nằm ngay trong object mới mà bạn tạo ra.
+=>
+<b> should create new properties in _init function </b>
+)</pre>
            			</div>
            			</div>	
 				</div>
@@ -139,10 +167,10 @@ m.getFirstName = function(){
            				<i  style="color:#660066;">syntax: Extends(parent, object) </i><br/>
            				Example:<br/>
 <pre style="color: #006600;">var AUS = Extends(PERSON, function(){
-	this.sex = new PrivateProperty('male');
+	
 	this._init = function(firstName, lastName, sex){
 		this._super(firstName, lastName);
-		this.sex = sex;
+		this.sex = new PrivateProperty(sex);
 	};
 	this.information2 = function(){
 		this._super();
@@ -196,7 +224,7 @@ this.get = function get(){
 	Check(ObjectParent, get.caller);
 	return value;
 };
-Định nghĩa method get bằng 1 function định danh, như vậy có thể sử dụng get.caller nhưng chú ý là sử  dụng this sẽ là get() chứ không phải đối tượng đó.
+Định nghĩa method get bằng 1 function định danh, như vậy có thể sử dụng get.caller nhưng chú ý là sử  dụng <b>this</b> sẽ là get() chứ không phải đối tượng đó.
 </pre>	
   					</div>
            			</div>

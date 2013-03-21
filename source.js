@@ -14,15 +14,17 @@
 	PatternFunction = function(){					
 			var p = function(){
 				// Clone this
-				var self = this;			
-				// Make protected, private propertype 
-				for (prop in self) {
-					if(self[prop] instanceof ProtectedProperty || self[prop] instanceof PrivateProperty)
-					Object.addProperty(self, prop, self[prop]);
-				}				
+				var self = this;								
 				// Run _init
-				if ( !this.constructor._initializing && this._init )
-					this._init.apply(this, arguments);					
+				if ( !this.constructor._initializing && this._init ){
+					this._init.apply(this, arguments);
+					// Make protected, private propertype 
+					for (prop in self) {
+						if(self[prop] instanceof ProtectedProperty || self[prop] instanceof PrivateProperty)
+						Object.addProperty(self, prop, self[prop]);
+					}
+				}
+										
 			};			
 			return p;		
 	}
@@ -212,17 +214,18 @@
 		};
 	}(Object.defineProperty));
 })();
+
+/**
 try{
 
 
 console.group("Step 1 : Create object");
 var PERSON = Create(function(){
-	this.firstName = new ProtectedProperty('');
-	this.lastName  = new ProtectedProperty('');
-	this.money 	   = new PrivateProperty(300);
+	
 	this._init = function(firstName, lastName){
-		this.firstName = firstName;
-		this.lastName  = lastName;
+		this.firstName = new ProtectedProperty(firstName);
+		this.lastName  = new ProtectedProperty(lastName);
+		this.money 	   = new PrivateProperty(300);
 	};
 	this.information = function(){
 		console.log('my name is ' + this.firstName + " " + this.lastName);
@@ -242,11 +245,10 @@ console.log(m);
 console.groupEnd();
 
 console.group("Step 2 : Extends");
-var AUS = Extends(PERSON, function(){
-	this.sex = new PrivateProperty('male');
+var AUS = Extends(PERSON, function(){	
 	this._init = function(firstName, lastName, sex){
 		this._super(firstName, lastName);
-		this.sex = sex;
+		this.sex = new PrivateProperty(sex);
 	};
 	this.information2 = function(){
 		this._super();
@@ -263,3 +265,4 @@ console.log(z instanceof PERSON);
 	console.log(e.getMessage());
 }
 
+*/

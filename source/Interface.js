@@ -50,15 +50,15 @@
 			arguments.length + "arguments, but expected at least 2.");
 		}
 		for(var i = 1, len = arguments.length; i < len; i++) {
-			var Interface = arguments[i];
-			if(Interface.constructor !== Interface) {
+			var interface = arguments[i];
+			if(interface.constructor !== Interface) {
 				throw new Error("Function Interface.ensureImplements expects arguments" + "two and above to be instances of Interface.");
 			}
-			for(var j = 0, methodsLen = Interface.methods.length; j < methodsLen; j++) {
-				var method = Interface.methods[j];
+			for(var j = 0, methodsLen = interface.methods.length; j < methodsLen; j++) {
+				var method = interface.methods[j];
 				if(!object[method] || typeof object[method] !== 'function') {
 					throw new Error("Function Interface.ensureImplements: object "
-					+ "does not implement the " + Interface.name
+					+ "does not implement the " + interface.name
 					+ " Interface. Method " + method + " was not found.");
 				}
 			}
