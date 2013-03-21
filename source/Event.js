@@ -46,9 +46,14 @@
 		_init: function(){
 			// define the type of events
 			this._event = {
-				change : ON,
-				reset  : ON,
-				remove : ON
+				property:{
+					change : ON,
+					reset  : ON,
+					remove : ON
+				},
+				class:{
+
+				}
 			};
 			/**
 				auto create get/set function to objects property
@@ -61,40 +66,67 @@
 					(function(){
 						var p = prop;
 						var saveValue = self[p];
-						// object store listener
-						self[p + "On"] = new ClassManager(true, true);
-						self.addTypeOfEventsForProperty(self._event, p);
 
+						self[p] = {};
+						// object store listener
+						self[p]["On"] = new ClassManager(true, true);
+						self.addTypeOfEventsForProperty(self._event.property, p);
+
+						self[p]["SaveValue"] = [];
+						self[p]["SaveValue"].push(saveValue);
+						self[p]['index'] = self[p]["SaveValue"].length;
+						self[p]['push'] = function( newValue ){
+							self[p]["SaveValue"].push(newValue);
+							self[p]['index']++;
+						}
+						self[p]['pop'] = function(){							
+							self[p]['index']--;
+							return self[p]["SaveValue"].pop();
+						}
+						self[p]['value'] = function(){
+							return self[p]["SaveValue"][self[p]['index']-1];
+						}
+						self[p]['reset'] = function(){
+							self[p]['index'] = 1;
+						}
 						// create get function
+						/**
 						var g = "get" + p;
 						self[g] = function(){
 							return self[p];
 						}
+						*/
 
 						//create set function
+						/**
 						var s = "set" + p;						
 						self[s] = function(v){
 							if(self[p] != v){
 								var oldValue = self[p];
 								self[p] = v;																
-								Event.callEvents(self[p + "On"].get('change'), v, oldValue);
+								Event.callEvents(self[p]["On"].get('change'), v, oldValue);
 							}
 							return this;
 						}
-
+						*/
 						//create reset function
+						/**
 						var r = "reset" + p;
 						self[r] = function(){
 							if(self[p] != saveValue){
 								var oldValue = self[p];
 								self[p] = saveValue;
-								Event.callEvents(self[p + "On"].get('reset'), saveValue, oldValue);
+								Event.callEvents(self[p]["On"].get('reset'), saveValue, oldValue);
 							}
 							return this;
 						}
+						*/
 					})();					
 				}
 			}
+			// Event for class
+			this["eventOn"] = new ClassManager(true, true);
+			this.addTypeOfEventsForProperty(this._event.class, "event");
 		},
 
 		addTypeOfEventsForProperty: function(events, property){
@@ -108,20 +140,20 @@
 			return this;
 		},
 		addTypeOfEventForProperty: function(event, property){
-			if(this[property + "On"].get(event)) return this;			
-			this[property + "On"].push([], event);			
+			if(this[property]["On"].get(event)) return this;			
+			this[property]["On"].push([], event);			
 			return this;
 		},
 
 		// add listenToChange event
 		listenToChange: function(nameProperty, object, callback){
-			object[nameProperty + "On"].get('change').push(new Event(callback, this, object));			
+			object[nameProperty]["On"].get('change').push(new Event(callback, this, object));			
 			return this;
 		},
 
 		// add listenToReset event
 		listenToReset: function(nameProperty, object, callback){
-			object[nameProperty + "On"].get('reset').push(new Event(callback, this, object));			
+			object[nameProperty]["On"].get('reset').push(new Event(callback, this, object));			
 			return this;
 		},
 		/**
@@ -145,7 +177,37 @@
 		unsubscriber:  function(){},
 		//listenTo:
 		//stopListening:
-		on :  function(){},
-		off :  function(){}
+		on : function(string, func){
+
+		},
+		off : function(){},
+
+		// create set function 
+		set : function( obj ){
+			for(var i in obj) {
+				if (obj.hasOwnProperty(i)){
+					var oldValue = this[i].value();
+					this[i].push(obj[i]);
+					Event.callEvents(this[i]["On"].get('change'), obj[i], oldValue);
+				}
+			}
+			return this;
+		},
+		// create get function
+		get : function( name ){
+			return this[name].value();
+		},
+		// create reset function
+		reset : function( name ){
+			var oldValue = this[name].value();
+			this[name].reset();
+			Event.callEvents(this[name]["On"].get('reset'), this[name].value(), oldValue);
+			return this;
+		},
+
+		previous: function( name ){
+			this[name]['index']--;
+			return this[name].value();
+		}
 	});
 })()
