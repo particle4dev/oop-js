@@ -23,8 +23,9 @@
 						if(self[prop] instanceof ProtectedProperty || self[prop] instanceof PrivateProperty)
 						Object.addProperty(self, prop, self[prop]);
 					}
-				}
-										
+					if ( this._create )
+					this._create.apply(this);
+				}			
 			};			
 			return p;		
 	}
@@ -182,7 +183,7 @@
 		    			var tgFunc = (function(sourceFunc, targeFunc){
 		    				return function(){
 		    					var tmp = this._super;
-		    					this._super = sourceFunc;	    				
+		    					this._super = sourceFunc;				
 		    					var ret = targeFunc.apply(this, arguments);
 		    					this._super = tmp;
 		    					return ret;

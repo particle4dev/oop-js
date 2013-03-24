@@ -1,4 +1,14 @@
 /**
+ * 
+ * 
+ * @author      Steve Hoang <particles4dev>
+ * @version     
+ * @since       0.1
+ *
+**/
+
+
+/**
  The property has 4 states that you can listen to:
 	+) change :
 	+) reset  :
@@ -6,30 +16,57 @@
 */
 
 (function(){
-
+	/**
+	 *
+	 *
+	 *
+	 */
 	Event = Create({
 		// function will be run
 		callback : null,
-		// 
+		// context execute callback function (this)
 		content : null,
-		// 
+		// context's reference
 		reference : null,
+
+		/** 
+		 * Constructor
+		 * 
+		 * @param callback
+		 * @param content
+		 * @param reference
+		 *
+		 * @return  
+		**/
 		_init : function(callback, content, reference){
 			this.callback = callback;
 			this.content = content;
 			this.reference = reference;
 		},
-
+		/** 
+		 * execute callback function
+		 * 
+		 * @param args 
+		 *
+		 * @return 
+		**/	
 		run : function( args ){
 			if(this.reference != null){
 				args.push(this.reference);
 			}
-			this.callback.apply(this.content, args);
+			return this.callback.apply(this.content, args);
 		}
 
 	});
-	// static method
-	Event.callEvents = function(array){
+	/** 
+	 * @static method
+	 * 
+	 * @param array : arguments[0] 
+	 * @param args 	: arguments[n](0<n<arguments.length)
+	 *
+	 * @return 
+	**/	
+	Event.executeEvents = function(array){
 		
 		var args = [];
 	    for (var i = 1, len = arguments.length; i < len; i++) {
@@ -44,122 +81,87 @@
 	EventModel = Create({		
 
 		_init: function(){
+			console.log("_init");
 			// define the type of events
-			this._event = {
-				property:{
-					change : ON,
-					reset  : ON,
-					remove : ON
-				},
-				class:{
+			this._event =  new PrivateProperty(new ClassManager(false, true));
 
-				}
-			};
+			this.typeOfEvent = ['change', 'reset'];
+
+			// object will store the old value of properties
+			this._storeValue =  new PrivateProperty(new ClassManager(false, true));
+		},
+
+		_create: function(){
+			console.log("_create");
 			/**
 				auto create get/set function to objects property
 				Note:
 					set<property's name> function will autorun <property's name>Change function if it exits
-			*/
+			*/			
 			for(var prop in this) {
-				if(typeof this[prop] == 'number' || typeof this[prop] == 'string'){
-					var self = this;
-					(function(){
-						var p = prop;
-						var saveValue = self[p];
-
-						self[p] = {};
-						// object store listener
-						self[p]["On"] = new ClassManager(true, true);
-						self.addTypeOfEventsForProperty(self._event.property, p);
-
-						self[p]["SaveValue"] = [];
-						self[p]["SaveValue"].push(saveValue);
-						self[p]['index'] = self[p]["SaveValue"].length;
-						self[p]['push'] = function( newValue ){
-							self[p]["SaveValue"].push(newValue);
-							self[p]['index']++;
-						}
-						self[p]['pop'] = function(){							
-							self[p]['index']--;
-							return self[p]["SaveValue"].pop();
-						}
-						self[p]['value'] = function(){
-							return self[p]["SaveValue"][self[p]['index']-1];
-						}
-						self[p]['reset'] = function(){
-							self[p]['index'] = 1;
-						}
-						// create get function
-						/**
-						var g = "get" + p;
-						self[g] = function(){
-							return self[p];
-						}
-						*/
-
-						//create set function
-						/**
-						var s = "set" + p;						
-						self[s] = function(v){
-							if(self[p] != v){
-								var oldValue = self[p];
-								self[p] = v;																
-								Event.callEvents(self[p]["On"].get('change'), v, oldValue);
-							}
-							return this;
-						}
-						*/
-						//create reset function
-						/**
-						var r = "reset" + p;
-						self[r] = function(){
-							if(self[p] != saveValue){
-								var oldValue = self[p];
-								self[p] = saveValue;
-								Event.callEvents(self[p]["On"].get('reset'), saveValue, oldValue);
-							}
-							return this;
-						}
-						*/
-					})();					
+				if(typeof this[prop] != 'function' && this[prop] != this._event && this[prop] != this._storeValue && this[prop] != this._super && this[prop] != this.typeOfEvent ){
+					this._storeValue.push([], prop);
+					this._storeValue.get(prop).push(this[prop]);
+					this.createNewEvent(prop);
 				}
 			}
-			// Event for class
-			this["eventOn"] = new ClassManager(true, true);
-			this.addTypeOfEventsForProperty(this._event.class, "event");
+			
 		},
 
-		addTypeOfEventsForProperty: function(events, property){
-			for(var i in events) {
-				if (events.hasOwnProperty(i)){
-					this.addTypeOfEventForProperty(i, property);
-					if(!this._event[i])
-					this._event[events[i]] = ON;
-				}				
+		/** 
+		 * @description
+		 * Create new event
+		 * 
+		 * @param name
+		 *
+		 * @return this
+		**/
+		createNewEvent: function(name){
+			
+			this.typeOfEvent.forEach(function(value, index){
+				this._event.push([], value + ":" + name);
+			}, this);
+			
+			return this;
+		},
+
+		/**
+		 * GROUP METHOD VALUE
+		 */
+		// Previous the property's value
+		previous: function( name ){
+			
+		},
+		// Set function 
+		set : function( obj ){
+			for(var i in obj) {
+				if (obj.hasOwnProperty(i)){
+					var oldValue = this[i];
+					this._storeValue.get(i).push(oldValue);
+					this[i] = obj[i];
+					Event.executeEvents(this._event.get('change:' + i), obj[i], oldValue);
+				}
 			}
 			return this;
 		},
-		addTypeOfEventForProperty: function(event, property){
-			if(this[property]["On"].get(event)) return this;			
-			this[property]["On"].push([], event);			
+		// Get function
+		get : function( name ){
+			return this[name];
+		},
+		// Reset function
+		reset : function( name ){
+			var oldValue = this[name];
+			this[name] = this._storeValue.get(name)[0];
+			this._storeValue.set(name, []);
+			Event.executeEvents(this._event.get('reset:' + name), this[name], oldValue);
 			return this;
 		},
 
-		// add listenToChange event
-		listenToChange: function(nameProperty, object, callback){
-			object[nameProperty]["On"].get('change').push(new Event(callback, this, object));			
-			return this;
-		},
-
-		// add listenToReset event
-		listenToReset: function(nameProperty, object, callback){
-			object[nameProperty]["On"].get('reset').push(new Event(callback, this, object));			
-			return this;
-		},
 		/**
-
-		syntax : object.trigger(event, [*args])
-
+		 * GROUP METHOD EVENT
+		 */
+		/**
+		 * @syntax : object.trigger(event, [*args])
 		*/
 		trigger: function(name){
 			if(!name) return this;
@@ -173,41 +175,13 @@
 		},
 
 		subscriber:  function(){},
-
 		unsubscriber:  function(){},
-		//listenTo:
-		//stopListening:
-		on : function(string, func){
 
+		on : function(string, func, reference){
+			if(reference._event.get(string)){				
+				reference._event.get(string).push(new Event(func, this, reference));
+			}
 		},
 		off : function(){},
-
-		// create set function 
-		set : function( obj ){
-			for(var i in obj) {
-				if (obj.hasOwnProperty(i)){
-					var oldValue = this[i].value();
-					this[i].push(obj[i]);
-					Event.callEvents(this[i]["On"].get('change'), obj[i], oldValue);
-				}
-			}
-			return this;
-		},
-		// create get function
-		get : function( name ){
-			return this[name].value();
-		},
-		// create reset function
-		reset : function( name ){
-			var oldValue = this[name].value();
-			this[name].reset();
-			Event.callEvents(this[name]["On"].get('reset'), this[name].value(), oldValue);
-			return this;
-		},
-
-		previous: function( name ){
-			this[name]['index']--;
-			return this[name].value();
-		}
 	});
 })()
