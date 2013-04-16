@@ -81,25 +81,21 @@
 	EventModel = Create({		
 
 		_init: function(){
-			console.log("_init");
 			// define the type of events
 			this._event =  new PrivateProperty(new ClassManager(false, true));
 
-			this.typeOfEvent = ['change', 'reset'];
-
+			if(!this._typeOfEvent) this._typeOfEvent = ['change', 'reset'];
+			if(!this._ignorePrototype) this._ignorePrototype = ['_event', '_storeValue', '_super', '_typeOfEvent', '_ignorePrototype'];
 			// object will store the old value of properties
 			this._storeValue =  new PrivateProperty(new ClassManager(false, true));
 		},
 
 		_create: function(){
-			console.log("_create");
 			/**
-				auto create get/set function to objects property
-				Note:
-					set<property's name> function will autorun <property's name>Change function if it exits
+				
 			*/			
 			for(var prop in this) {
-				if(typeof this[prop] != 'function' && this[prop] != this._event && this[prop] != this._storeValue && this[prop] != this._super && this[prop] != this.typeOfEvent ){
+				if(typeof this[prop] != 'function' && this[prop] != this._event && this[prop] != this._storeValue && this[prop] != this._super && this[prop] != this._typeOfEvent ){
 					this._storeValue.push([], prop);
 					this._storeValue.get(prop).push(this[prop]);
 					this.createNewEvent(prop);
@@ -118,7 +114,7 @@
 		**/
 		createNewEvent: function(name){
 			
-			this.typeOfEvent.forEach(function(value, index){
+			this._typeOfEvent.forEach(function(value, index){
 				this._event.push([], value + ":" + name);
 			}, this);
 			
@@ -137,23 +133,33 @@
 			for(var i in obj) {
 				if (obj.hasOwnProperty(i)){
 					var oldValue = this[i];
-					this._storeValue.get(i).push(oldValue);
+					if(!this._storeValue.has(i)){
+						this._storeValue.push([], i);
+						this.createNewEvent(i);
+					}
+					else
+						this._storeValue.get(i).push(oldValue);
 					this[i] = obj[i];
 					Event.executeEvents(this._event.get('change:' + i), obj[i], oldValue);
 				}
 			}
 			return this;
-		},
-		// Get function
+		},		
+		/**
+		 * @syntax : object.get(name)
+		*/
 		get : function( name ){
 			return this[name];
 		},
-		// Reset function
+		/**
+		 * @syntax : object.reset(name)
+		*/
 		reset : function( name ){
 			var oldValue = this[name];
 			this[name] = this._storeValue.get(name)[0];
 			this._storeValue.set(name, []);
-			Event.executeEvents(this._event.get('reset:' + name), this[name], oldValue);
+			this.triggerEvent('reset:' + name, this[name], oldValue);
+			//Event.executeEvents(this._event.get('reset:' + name), this[name], oldValue);
 			return this;
 		},
 
@@ -173,15 +179,29 @@
 			this[name].apply(this, args);
 			return this;
 		},
+		triggerEvent: function(name){
+			if(!name) return this;
+			var args = [];
+			args.push(this._event.get(name));
+	        for (var i = 1, len = arguments.length; i < len; i++) {
+	          	args.push(arguments[i]);
+	        }
+
+			Event.executeEvents.apply(Event.executeEvents, args);
+			return this;
+		},
 
 		subscriber:  function(){},
 		unsubscriber:  function(){},
 
-		on : function(string, func, reference){
+		on: function(string, func, reference){
+			if(!reference) reference = this;
 			if(reference._event.get(string)){				
 				reference._event.get(string).push(new Event(func, this, reference));
 			}
 		},
-		off : function(){},
+		off : function(){
+
+		},
 	});
 })()

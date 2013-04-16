@@ -11,7 +11,11 @@
 	/**
 	 *	Return the pattern function
 	 */
-	PatternFunction = function(){					
+	if(!window.M){
+		M = {};
+	}
+	M.CLASS = function(){};
+	PatternFunction = function(){				
 			var p = function(){
 				// Clone this
 				var self = this;								
@@ -23,10 +27,11 @@
 						if(self[prop] instanceof ProtectedProperty || self[prop] instanceof PrivateProperty)
 						Object.addProperty(self, prop, self[prop]);
 					}
-					if ( this._create )
-					this._create.apply(this);
+					if (this._create)
+						this._create.apply(this);
 				}			
-			};			
+			};
+			p.prototype	= new M.CLASS();	
 			return p;		
 	}
 	/**
